@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 
+	mazemodel "github.com/Drofff/maze-game/maze"
 	"github.com/Drofff/maze-game/mazegen"
 )
 
-func printCell(cell *mazegen.Cell) {
+func printCell(cell *mazemodel.Cell) {
 	if cell.Walls.Top && cell.Walls.Bottom && cell.Walls.Left && cell.Walls.Right {
 		fmt.Print("▢")
 		return
@@ -78,10 +79,10 @@ func printCell(cell *mazegen.Cell) {
 func main() {
 	maze := mazegen.Generate(5, 10)
 
-	var startCell *mazegen.Cell
+	var startCell *mazemodel.Cell
 	for y := 0; y < len(maze); y++ {
 		for x := 0; x < len(maze[y]); x++ {
-			if maze[y][x].Role == mazegen.CellRoleStart {
+			if maze[y][x].Role == mazemodel.CellRoleStart {
 				startCell = maze[y][x]
 			}
 

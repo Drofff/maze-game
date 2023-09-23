@@ -3,45 +3,27 @@ package mazegen
 import (
 	"math/rand"
 
+	mazemodel "github.com/Drofff/maze-game/maze"
 	"github.com/golang-collections/collections/stack"
 )
 
-type CellWalls struct {
-	Top    bool
-	Bottom bool
-	Left   bool
-	Right  bool
-}
+type cellWithMeta struct {
+	mazemodel.Cell
 
-type CellLocation struct {
-	RowIndex    int
-	ColumnIndex int
-}
-
-type CellRole int
-
-type Cell struct {
-	Walls   CellWalls
-	Loc     CellLocation
-	Role    CellRole
 	visited bool
 }
 
-const (
-	CellRolePath   CellRole = 0
-	CellRoleStart  CellRole = 1
-	CellRoleFinish CellRole = 2
-)
-
-func newEmptyMaze(width, height int) [][]*Cell {
-	maze := make([][]*Cell, height)
+func newEmptyMaze(width, height int) [][]*cellWithMeta {
+	maze := make([][]*cellWithMeta, height)
 	for y := 0; y < height; y++ {
-		maze[y] = make([]*Cell, width)
+		maze[y] = make([]*cellWithMeta, width)
 		for x := 0; x < width; x++ {
-			maze[y][x] = &Cell{
-				Walls:   CellWalls{Top: true, Bottom: true, Left: true, Right: true},
-				Loc:     CellLocation{RowIndex: y, ColumnIndex: x},
-				Role:    CellRolePath,
+			maze[y][x] = &cellWithMeta{
+				Cell: mazemodel.Cell{
+					Walls: mazemodel.CellWalls{Top: true, Bottom: true, Left: true, Right: true},
+					Loc:   mazemodel.CellLocation{RowIndex: y, ColumnIndex: x},
+					Role:  mazemodel.CellRolePath,
+				},
 				visited: false,
 			}
 		}
@@ -49,15 +31,15 @@ func newEmptyMaze(width, height int) [][]*Cell {
 	return maze
 }
 
-func findUnvisitedNeighbours(posX, posY int, maze [][]*Cell) []*Cell {
-	neighbours := []CellLocation{
+func findUnvisitedNeighbours(posX, posY int, maze [][]*cellWithMeta) []*cellWithMeta {
+	neighbours := []mazemodel.CellLocation{
 		{RowIndex: posY, ColumnIndex: posX - 1},
 		{RowIndex: posY, ColumnIndex: posX + 1},
 		{RowIndex: posY - 1, ColumnIndex: posX},
 		{RowIndex: posY + 1, ColumnIndex: posX},
 	}
 
-	var unvisitedNeighbours []*Cell
+	var unvisitedNeighbours []*cellWithMeta
 	for _, neighbour := range neighbours {
 		if neighbour.RowIndex < 0 || neighbour.RowIndex >= len(maze) ||
 			neighbour.ColumnIndex < 0 || neighbour.ColumnIndex >= len(maze[neighbour.RowIndex]) {
@@ -73,7 +55,7 @@ func findUnvisitedNeighbours(posX, posY int, maze [][]*Cell) []*Cell {
 	return unvisitedNeighbours
 }
 
-func selectRandom(cells []*Cell) *Cell {
+func selectRandom(cells []*cellWithMeta) *cellWithMeta {
 	if len(cells) == 1 {
 		return cells[0]
 	}
@@ -82,7 +64,7 @@ func selectRandom(cells []*Cell) *Cell {
 	return cells[randIndex]
 }
 
-func removeWallBetween(cellA, cellB *Cell) {
+func removeWallBetween(cellA, cellB *cellWithMeta) {
 	if cellA.Loc.RowIndex < cellB.Loc.RowIndex {
 		cellA.Walls.Bottom = false
 		cellB.Walls.Top = false
@@ -108,14 +90,26 @@ func removeWallBetween(cellA, cellB *Cell) {
 	}
 }
 
-func Generate(width, height int) [][]*Cell {
+func fromCellsWithMeta(cellsWithMeta [][]*cellWithMeta) [][]*mazemodel.Cell {
+	cells := make([][]*mazemodel.Cell, len(cellsWithMeta))
+	for row := 0; row < len(cellsWithMeta); row++ {
+		cells[row] = make([]*mazemodel.Cell, len(cellsWithMeta[row]))
+
+		for column := 0; column < len(cellsWithMeta[row]); column++ {
+			cells[row][column] = &cellsWithMeta[row][column].Cell
+		}
+	}
+	return cells
+}
+
+func Generate(width, height int) [][]*mazemodel.Cell {
 	maze := newEmptyMaze(width, height)
 	currPosX, currPosY := rand.Intn(width), 0
 
-	maze[currPosY][currPosX].Role = CellRoleStart
+	maze[currPosY][currPosX].Role = mazemodel.CellRoleStart
 	maze[currPosY][currPosX].visited = true
 
-	maze[height-1][width-1].Role = CellRoleFinish
+	maze[height-1][width-1].Role = mazemodel.CellRoleFinish
 
 	visitedCells := stack.New()
 
@@ -124,10 +118,10 @@ func Generate(width, height int) [][]*Cell {
 		if len(uns) == 0 {
 			previousCell := visitedCells.Pop()
 			if previousCell == nil {
-				return maze
+				return fromCellsWithMeta(maze)
 			}
 
-			currPosX, currPosY = previousCell.(*Cell).Loc.ColumnIndex, previousCell.(*Cell).Loc.RowIndex
+			currPosX, currPosY = previousCell.(*cellWithMeta).Loc.ColumnIndex, previousCell.(*cellWithMeta).Loc.RowIndex
 			continue
 		}
 		visitedCells.Push(maze[currPosY][currPosX])
