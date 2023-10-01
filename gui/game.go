@@ -25,6 +25,15 @@ const (
 	keyScanCodeRight = 2  // 'D' key mac os
 )
 
+func newWinnerWindow(a fyne.App) fyne.Window {
+	w := a.NewWindow("Congrats!")
+	img := canvas.NewImageFromFile("img/you-win.jpeg")
+	img.FillMode = canvas.ImageFillOriginal
+	w.SetContent(container.NewStack(img))
+	w.CenterOnScreen()
+	return w
+}
+
 func buildPixelMatrix(m [][]*mazemodel.Cell, windowSize int) [][]color.Color {
 	pm := make([][]color.Color, windowSize)
 	for row := 0; row < windowSize; row++ {
@@ -127,6 +136,11 @@ func newGameWindow(a fyne.App) fyne.Window {
 
 		if g.PlayerLocation().RowIndex != playerLoc.RowIndex || g.PlayerLocation().ColumnIndex != playerLoc.ColumnIndex {
 			playerMarker.Move(calcPlayerScreenPosition(g, pixelsInCell))
+		}
+
+		if g.State() == game.StateWon {
+			newWinnerWindow(a).Show()
+			w.Close()
 		}
 	})
 
