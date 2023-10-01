@@ -34,14 +34,14 @@ func buildPixelMatrix(m [][]*mazemodel.Cell, windowSize int) [][]color.Color {
 		}
 	}
 
-	pixelsPerCell := windowSize / len(m)
+	pixelsPerCell := float32(windowSize) / float32(len(m))
 	for y := 0; y < len(m); y++ {
 		for x := 0; x < len(m[y]); x++ {
-			startPixelY := y * pixelsPerCell
-			startPixelX := x * pixelsPerCell
+			startPixelY := int(float32(y) * pixelsPerCell)
+			startPixelX := int(float32(x) * pixelsPerCell)
 
-			endPixelY := startPixelY + pixelsPerCell - 1
-			endPixelX := startPixelX + pixelsPerCell - 1
+			endPixelY := int(float32(startPixelY) + pixelsPerCell)
+			endPixelX := int(float32(startPixelX) + pixelsPerCell)
 
 			cell := m[y][x]
 
@@ -95,21 +95,22 @@ func newGameWindow(a fyne.App) fyne.Window {
 	m := mazegen.Generate(mazeWidth, mazeHeight)
 
 	var pixelMatrix [][]color.Color
-	w.SetContent(canvas.NewRasterWithPixels(func(x, y, w, h int) color.Color {
+	mazeImage := canvas.NewRasterWithPixels(func(x, y, w, h int) color.Color {
 		if len(pixelMatrix) == 0 {
 			pixelMatrix = buildPixelMatrix(m, w)
 		}
 		return pixelMatrix[y][x]
-	}))
+	})
 
 	g := game.NewGame(m)
 
-	pixelsInCell := float32(len(pixelMatrix)) / float32(len(m))
+	pixelsInCell := float32(gameWindowSize) / float32(len(m))
 
 	playerMarker := canvas.NewCircle(color.RGBA{R: 255, G: 252, B: 127, A: 255})
-	playerMarker.Resize(fyne.NewSquareSize(pixelsInCell))
+	playerMarker.Resize(fyne.NewSquareSize(pixelsInCell / 2))
 	playerMarker.Move(calcPlayerScreenPosition(g, pixelsInCell))
-	// add to window
+
+	w.SetContent(container.NewStack(mazeImage, container.NewWithoutLayout(playerMarker)))
 
 	w.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
 		playerLoc := g.PlayerLocation()
