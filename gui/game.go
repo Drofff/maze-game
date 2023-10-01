@@ -1,14 +1,16 @@
 package gui
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/Drofff/maze-game/game"
 	mazemodel "github.com/Drofff/maze-game/maze"
 	"github.com/Drofff/maze-game/mazegen"
-	"image/color"
 )
 
 const (
@@ -16,6 +18,11 @@ const (
 	mazeHeight = 50
 
 	gameWindowSize = 900
+
+	keyScanCodeUp    = 13 // 'W' key mac os
+	keyScanCodeDown  = 1  // 'S' key mac os
+	keyScanCodeLeft  = 0  // 'A' key mac os
+	keyScanCodeRight = 2  // 'D' key mac os
 )
 
 func buildPixelMatrix(m [][]*mazemodel.Cell, windowSize int) [][]color.Color {
@@ -75,6 +82,11 @@ func buildPixelMatrix(m [][]*mazemodel.Cell, windowSize int) [][]color.Color {
 	return pm
 }
 
+func calcPlayerScreenPosition(g game.Game, pixelsInCell float32) fyne.Position {
+	playerLoc := g.PlayerLocation()
+	return fyne.NewPos(float32(playerLoc.ColumnIndex)*pixelsInCell, float32(playerLoc.RowIndex)*pixelsInCell)
+}
+
 func newGameWindow(a fyne.App) fyne.Window {
 	w := a.NewWindow("Maze Game")
 	w.Resize(fyne.NewSquareSize(gameWindowSize))
@@ -89,6 +101,34 @@ func newGameWindow(a fyne.App) fyne.Window {
 		}
 		return pixelMatrix[y][x]
 	}))
+
+	g := game.NewGame(m)
+
+	pixelsInCell := float32(len(pixelMatrix)) / float32(len(m))
+
+	playerMarker := canvas.NewCircle(color.RGBA{R: 255, G: 252, B: 127, A: 255})
+	playerMarker.Resize(fyne.NewSquareSize(pixelsInCell))
+	playerMarker.Move(calcPlayerScreenPosition(g, pixelsInCell))
+	// add to window
+
+	w.Canvas().SetOnTypedKey(func(e *fyne.KeyEvent) {
+		playerLoc := g.PlayerLocation()
+		switch e.Physical.ScanCode {
+		case keyScanCodeUp:
+			g.MoveTo(mazemodel.CellLocation{RowIndex: playerLoc.RowIndex - 1, ColumnIndex: playerLoc.ColumnIndex})
+		case keyScanCodeDown:
+			g.MoveTo(mazemodel.CellLocation{RowIndex: playerLoc.RowIndex + 1, ColumnIndex: playerLoc.ColumnIndex})
+		case keyScanCodeLeft:
+			g.MoveTo(mazemodel.CellLocation{RowIndex: playerLoc.RowIndex, ColumnIndex: playerLoc.ColumnIndex - 1})
+		case keyScanCodeRight:
+			g.MoveTo(mazemodel.CellLocation{RowIndex: playerLoc.RowIndex, ColumnIndex: playerLoc.ColumnIndex + 1})
+		}
+
+		if g.PlayerLocation().RowIndex != playerLoc.RowIndex || g.PlayerLocation().ColumnIndex != playerLoc.ColumnIndex {
+			playerMarker.Move(calcPlayerScreenPosition(g, pixelsInCell))
+		}
+	})
+
 	return w
 }
 

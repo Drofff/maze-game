@@ -26,10 +26,23 @@ const (
 	StateWon
 )
 
-func NewGame(mazeScheme [][]*maze.Cell, playerLoc maze.CellLocation) Game {
+func findStartCell(mazeScheme [][]*maze.Cell) maze.CellLocation {
+	for row := 0; row < len(mazeScheme); row++ {
+		for column := 0; column < len(mazeScheme[row]); column++ {
+			cell := mazeScheme[row][column]
+			if cell.Role == maze.CellRoleStart {
+				return cell.Loc
+			}
+		}
+	}
+	panic("no start cell found")
+}
+
+func NewGame(mazeScheme [][]*maze.Cell) Game {
+	startLoc := findStartCell(mazeScheme)
 	return &game{
 		state:      StateOngoing,
-		playerLoc:  playerLoc,
+		playerLoc:  startLoc,
 		mazeScheme: mazeScheme,
 	}
 }
